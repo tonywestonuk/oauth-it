@@ -10,7 +10,11 @@
 <body>
 {/if}
 
-<div class="auth-card" data-auth-url="{baseUrl}">
+<div class="auth-card" data-auth-url="{baseUrl}"
+     data-client-id="{clientId}"
+     data-redirect-uri="{redirectUri}"
+     data-code-challenge="{codeChallenge}"
+     data-code-challenge-method="{codeChallengeMethod}">
     <h1>Create Account</h1>
 
     {#if error && error.length > 0}

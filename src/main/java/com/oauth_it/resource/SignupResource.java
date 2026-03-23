@@ -24,11 +24,20 @@ public class SignupResource {
     @GET
     @Path("/signup")
     @Produces(MediaType.TEXT_HTML)
-    public TemplateInstance showSignupForm(@QueryParam("embed") boolean embed) {
+    public TemplateInstance showSignupForm(
+            @QueryParam("embed") boolean embed,
+            @QueryParam("client_id") String clientId,
+            @QueryParam("redirect_uri") String redirectUri,
+            @QueryParam("code_challenge") String codeChallenge,
+            @QueryParam("code_challenge_method") String codeChallengeMethod) {
         return signup
                 .data("error", "")
                 .data("username", "")
                 .data("baseUrl", baseUrl)
-                .data("embed", embed);
+                .data("embed", embed)
+                .data("clientId", clientId != null ? clientId : "")
+                .data("redirectUri", redirectUri != null ? redirectUri : "")
+                .data("codeChallenge", codeChallenge != null ? codeChallenge : "")
+                .data("codeChallengeMethod", codeChallengeMethod != null ? codeChallengeMethod : "S256");
     }
 }

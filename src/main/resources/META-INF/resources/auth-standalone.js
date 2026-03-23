@@ -14,8 +14,20 @@
     if (document.getElementById('passkey-register-btn')) {
         var signupAuth = new AuthClient(authUrl, {
             onSignup: function () {
+                var clientId    = card.getAttribute('data-client-id')           || '';
+                var redirectUri = card.getAttribute('data-redirect-uri')        || '';
+                var challenge   = card.getAttribute('data-code-challenge')      || '';
+                var method      = card.getAttribute('data-code-challenge-method') || 'S256';
+                var url = authUrl + '/authorize';
+                if (clientId && redirectUri && challenge) {
+                    url += '?client_id=' + encodeURIComponent(clientId)
+                        + '&redirect_uri=' + encodeURIComponent(redirectUri)
+                        + '&response_type=code'
+                        + '&code_challenge=' + encodeURIComponent(challenge)
+                        + '&code_challenge_method=' + encodeURIComponent(method);
+                }
                 setTimeout(function () {
-                    window.location.href = authUrl + '/authorize';
+                    window.location.href = url;
                 }, 2000);
             }
         });
@@ -89,20 +101,69 @@
     }
 
     // ---- Login page ----
-    if (document.getElementById('passkey-signin-btn')) {
-        var clientId    = card.getAttribute('data-client-id')    || '';
-        var redirectUri = card.getAttribute('data-redirect-uri') || authUrl;
-        var challenge   = card.getAttribute('data-code-challenge') || '';
-        var state       = card.getAttribute('data-state')          || '';
+    var signinBtn = document.getElementById('passkey-signin-btn');
+    if (signinBtn) {
+        var clientId    = card.getAttribute('data-client-id')           || '';
+        var redirectUri = card.getAttribute('data-redirect-uri')        || '';
+        var challenge   = card.getAttribute('data-code-challenge')      || '';
+        var state       = card.getAttribute('data-state')               || '';
 
-        var loginAuth = new AuthClient(authUrl, {
-            clientId:    clientId,
-            redirectUri: redirectUri,
-            onLogin: function () {
-                window.location.href = redirectUri || authUrl;
+        // Use AuthClient only for its WebAuthn helper methods, not its token exchange.
+        var loginHelper = new AuthClient(authUrl, {});
+
+        signinBtn.addEventListener('click', async function () {
+            loginHelper._clearError(document.body);
+            var usernameInput = document.getElementById('username');
+            var username = usernameInput ? usernameInput.value.trim() : '';
+            if (!username) {
+                loginHelper._showError(document.body, 'Please enter your username.');
+                return;
+            }
+
+            signinBtn.disabled = true;
+            signinBtn.textContent = 'Waiting for passkey\u2026';
+
+            try {
+                var startRes = await fetch(authUrl + '/webauthn/auth/start', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: username })
+                });
+                var startData = await startRes.json();
+                if (startData.error) throw new Error(startData.error);
+
+                var requestOptions = loginHelper._parseAssertionOptions(startData.requestOptions);
+                var assertion = await navigator.credentials.get({ publicKey: requestOptions });
+
+                var finishRes = await fetch(authUrl + '/webauthn/auth/finish', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        requestId:            startData.requestId,
+                        assertion:            loginHelper._assertionToJson(assertion),
+                        codeChallenge:        challenge,
+                        codeChallengeMethod:  'S256',
+                        clientId:             clientId,
+                        redirectUri:          redirectUri,
+                        state:                state
+                    })
+                });
+                var finishData = await finishRes.json();
+                if (finishData.error) throw new Error(finishData.error);
+
+                // Redirect back to the client with the code so it can do the token exchange
+                // using its own PKCE verifier (stored in the client's sessionStorage).
+                var sep = redirectUri.indexOf('?') >= 0 ? '&' : '?';
+                var dest = redirectUri + sep + 'code=' + encodeURIComponent(finishData.code);
+                if (state) dest += '&state=' + encodeURIComponent(state);
+                window.location.href = dest;
+
+            } catch (err) {
+                loginHelper._showError(document.body, err.message || 'Sign-in failed. Please try again.');
+                signinBtn.disabled = false;
+                signinBtn.textContent = 'Sign in with Passkey';
             }
         });
-        loginAuth._wireLogin(document.body, challenge, state);
     }
     function _b64ToBuffer(base64url) {
         var base64 = base64url.replace(/-/g, '+').replace(/_/g, '/');

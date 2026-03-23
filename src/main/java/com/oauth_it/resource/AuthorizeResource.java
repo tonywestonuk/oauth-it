@@ -14,7 +14,9 @@ import jakarta.ws.rs.core.Response;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 @Path("/authorize")
 @ApplicationScoped
@@ -29,7 +31,7 @@ public class AuthorizeResource {
     @ConfigProperty(name = "auth.base-url")
     String baseUrl;
 
-    private final Map<String, String> allowedClients = new HashMap<>();
+    private final Map<String, Set<String>> allowedClients = new HashMap<>();
 
     @PostConstruct
     void init() {
@@ -38,8 +40,9 @@ public class AuthorizeResource {
                 entry = entry.trim();
                 int idx = entry.indexOf(':');
                 if (idx > 0) {
-                    allowedClients.put(entry.substring(0, idx).trim(),
-                            entry.substring(idx + 1).trim());
+                    String clientId = entry.substring(0, idx).trim();
+                    String redirectUri = entry.substring(idx + 1).trim();
+                    allowedClients.computeIfAbsent(clientId, k -> new HashSet<>()).add(redirectUri);
                 }
             }
         }
@@ -82,7 +85,7 @@ public class AuthorizeResource {
 
     public boolean isValidClient(String clientId, String redirectUri) {
         if (clientId == null || redirectUri == null) return false;
-        String expected = allowedClients.get(clientId);
-        return expected != null && expected.equals(redirectUri);
+        Set<String> uris = allowedClients.get(clientId);
+        return uris != null && uris.contains(redirectUri);
     }
 }

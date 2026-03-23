@@ -2,6 +2,7 @@ package com.oauth_it.resource;
 
 import com.oauth_it.service.JwtService;
 import com.oauth_it.service.TokenStore;
+import com.oauth_it.service.UserStore;
 import com.nimbusds.jwt.JWTClaimsSet;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -17,6 +18,7 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import java.security.MessageDigest;
 import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
@@ -29,6 +31,9 @@ public class IntrospectResource {
 
     @Inject
     TokenStore tokenStore;
+
+    @Inject
+    UserStore userStore;
 
     @ConfigProperty(name = "auth.introspect-secret")
     String introspectSecret;
@@ -64,7 +69,11 @@ public class IntrospectResource {
         }
 
         String userId = claims.getSubject();
-        return Response.ok(Map.of("active", true, "userId", userId)).build();
+        Map<String, Object> body = new HashMap<>();
+        body.put("active", true);
+        body.put("userId", userId);
+        userStore.findByUserId(userId).ifPresent(u -> body.put("username", u.username));
+        return Response.ok(body).build();
     }
 
     private static boolean secretsMatch(String expected, String provided) {

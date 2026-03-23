@@ -34,7 +34,6 @@ public class WebAuthnResource {
 
     private static final Logger log = Logger.getLogger(WebAuthnResource.class);
 
-    private static final int USER_ID_LENGTH  = 8;
     private static final int REQUEST_ID_SIZE = 16; // bytes → 32 hex chars
 
     @Inject WebAuthnService webAuthnService;
@@ -60,7 +59,7 @@ public class WebAuthnResource {
         if (userStore.findByUsername(username).isPresent())
             return error("That username is already taken.");
 
-        String userId = SecurityUtils.randomAlphanumeric(USER_ID_LENGTH);
+        String userId = java.util.UUID.randomUUID().toString();
         PublicKeyCredentialCreationOptions options = webAuthnService.startRegistration(username, userId);
 
         String requestId = SecurityUtils.randomHex(REQUEST_ID_SIZE);

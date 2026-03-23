@@ -29,7 +29,10 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @ApplicationScoped
 public class WebAuthnService {
@@ -55,10 +58,15 @@ public class WebAuthnService {
                 .name(rpName)
                 .build();
 
+        Set<String> origins = Arrays.stream(rpOrigin.split(","))
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .collect(Collectors.toSet());
+
         rp = RelyingParty.builder()
                 .identity(identity)
                 .credentialRepository(credentialStore)
-                .origins(Collections.singleton(rpOrigin))
+                .origins(origins)
                 .build();
     }
 
