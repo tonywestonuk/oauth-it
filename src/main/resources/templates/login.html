@@ -1,0 +1,45 @@
+{#if !embed}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign In</title>
+    <link rel="stylesheet" href="{baseUrl}/auth.css">
+</head>
+<body>
+{/if}
+
+<div class="auth-card"
+     data-client-id="{clientId}"
+     data-redirect-uri="{redirectUri}"
+     data-code-challenge="{codeChallenge}"
+     data-code-challenge-method="{codeChallengeMethod}"
+     data-state="{state}">
+
+    <h1>Sign In</h1>
+
+    {#if error && error.length > 0}
+    <div class="auth-error">{error}</div>
+    {/if}
+
+    <div class="auth-field">
+        <label for="username">Username</label>
+        <input type="text" id="username" name="username"
+               autocomplete="username webauthn"
+               autofocus required>
+    </div>
+
+    <button type="button" id="passkey-signin-btn">Sign in with Passkey</button>
+
+    <div class="auth-links">
+        <a href="{baseUrl}/signup">Create account</a>
+    </div>
+</div>
+
+{#if !embed}
+<script src="{baseUrl}/auth-client.js"></script>
+<script src="{baseUrl}/auth-standalone.js"></script>
+</body>
+</html>
+{/if}

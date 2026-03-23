@@ -1,0 +1,24 @@
+{#if !embed}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{title}</title>
+    <link rel="stylesheet" href="{baseUrl}/auth.css">
+</head>
+<body>
+{/if}
+
+<div class="auth-card auth-card--wide">
+    <h1>{title}</h1>
+    <p>{body}</p>
+    <div class="auth-links">
+        <a href="{baseUrl}/authorize">Go to sign in</a>
+    </div>
+</div>
+
+{#if !embed}
+</body>
+</html>
+{/if}

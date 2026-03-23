@@ -1,0 +1,146 @@
+/* ============================================================
+   auth.css — OAuth server form styles
+   Served at /auth.css. Link or fetch from the game app.
+   Override any rule in your own stylesheet after this one.
+   ============================================================ */
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+/* Standalone page layout — has no effect when injected as a fragment */
+body {
+    font-family: system-ui, -apple-system, sans-serif;
+    background: #f5f5f5;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+}
+
+/* Card container */
+.auth-card {
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+    padding: 2rem;
+    width: 100%;
+    max-width: 400px;
+    font-family: system-ui, -apple-system, sans-serif;
+}
+
+.auth-card--wide {
+    max-width: 480px;
+    text-align: center;
+}
+
+/* Headings */
+.auth-card h1 {
+    font-size: 1.5rem;
+    margin-bottom: 1.5rem;
+    color: #1a1a1a;
+}
+
+.auth-card--wide h1 {
+    margin-bottom: 1rem;
+}
+
+/* Intro text */
+.auth-card .auth-intro {
+    font-size: 0.9rem;
+    color: #555;
+    margin-bottom: 1.5rem;
+}
+
+/* Body text (message page) */
+.auth-card p {
+    font-size: 0.95rem;
+    color: #444;
+    line-height: 1.6;
+}
+
+/* Form fields */
+.auth-card .auth-field {
+    margin-bottom: 1rem;
+}
+
+.auth-card label {
+    display: block;
+    font-size: 0.875rem;
+    font-weight: 500;
+    margin-bottom: 0.375rem;
+    color: #333;
+}
+
+.auth-card input[type="text"],
+.auth-card input[type="email"],
+.auth-card input[type="password"] {
+    width: 100%;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 1rem;
+    font-family: inherit;
+}
+
+.auth-card input:focus {
+    outline: none;
+    border-color: #4f7bf7;
+    box-shadow: 0 0 0 2px rgba(79,123,247,0.2);
+}
+
+/* Hint text below inputs */
+.auth-card .auth-hint {
+    font-size: 0.75rem;
+    color: #777;
+    margin-top: 0.25rem;
+}
+
+/* Error banner */
+.auth-card .auth-error {
+    background: #fff0f0;
+    border: 1px solid #f5c6cb;
+    border-radius: 4px;
+    color: #c0392b;
+    font-size: 0.875rem;
+    padding: 0.625rem 0.75rem;
+    margin-bottom: 1rem;
+}
+
+/* Submit button */
+.auth-card button[type="submit"] {
+    width: 100%;
+    padding: 0.625rem;
+    background: #4f7bf7;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+}
+
+.auth-card button[type="submit"]:hover {
+    background: #3a63d8;
+}
+
+/* Footer links */
+.auth-card .auth-links {
+    margin-top: 1.25rem;
+    font-size: 0.875rem;
+    text-align: center;
+    color: #555;
+}
+
+.auth-card--wide .auth-links {
+    margin-top: 1.75rem;
+}
+
+.auth-card .auth-links a {
+    color: #4f7bf7;
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.auth-card .auth-links a:hover {
+    text-decoration: underline;
+}

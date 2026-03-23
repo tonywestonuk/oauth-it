@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register New Passkey</title>
+    <link rel="stylesheet" href="{baseUrl}/auth.css">
+    <script src="{baseUrl}/auth-client.js"></script>
+    <script src="{baseUrl}/auth-standalone.js"></script>
+</head>
+<body>
+
+<div id="recovery-container">
+    <div class="auth-card" data-recovery-token="{recoveryToken}" data-auth-url="{baseUrl}">
+        <h1>Register New Passkey</h1>
+        <p class="auth-intro">Your identity has been verified. Click below to register a new passkey on this device.</p>
+        <button type="button" id="passkey-recovery-btn">Register New Passkey</button>
+        <div class="auth-links">
+            <a href="{baseUrl}/authorize">Back to sign in</a>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>

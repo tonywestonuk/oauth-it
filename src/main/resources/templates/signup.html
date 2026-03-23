@@ -1,0 +1,40 @@
+{#if !embed}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create Account</title>
+    <link rel="stylesheet" href="{baseUrl}/auth.css">
+</head>
+<body>
+{/if}
+
+<div class="auth-card" data-auth-url="{baseUrl}">
+    <h1>Create Account</h1>
+
+    {#if error && error.length > 0}
+    <div class="auth-error">{error}</div>
+    {/if}
+
+    <div class="auth-field">
+        <label for="username">Username</label>
+        <input type="text" id="username" name="username"
+               value="{username}" autocomplete="username"
+               autofocus required>
+        <p class="auth-hint">3–32 characters. Letters, digits, underscores and hyphens only.</p>
+    </div>
+
+    <button type="button" id="passkey-register-btn">Register with Passkey</button>
+
+    <div class="auth-links">
+        Already have an account? <a href="{baseUrl}/authorize">Sign in</a>
+    </div>
+</div>
+
+{#if !embed}
+<script src="{baseUrl}/auth-client.js"></script>
+<script src="{baseUrl}/auth-standalone.js"></script>
+</body>
+</html>
+{/if}

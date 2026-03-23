@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Recover Passkey</title>
+    <link rel="stylesheet" href="{baseUrl}/auth.css">
+</head>
+<body>
+
+<div class="auth-card">
+    <h1>Recover Your Passkey</h1>
+    <p class="auth-intro">Enter the email address registered with your game account and we'll send you a recovery link.</p>
+
+    {#if error && error.length > 0}
+    <div class="auth-error">{error}</div>
+    {/if}
+
+    <form method="post" action="{baseUrl}/recover-passkey">
+        <div class="auth-field">
+            <label for="email">Email address</label>
+            <input type="email" id="email" name="email"
+                   autocomplete="email" autofocus required>
+        </div>
+        <button type="submit">Send Recovery Link</button>
+    </form>
+
+    <div class="auth-links">
+        <a href="{baseUrl}/authorize">Back to sign in</a>
+    </div>
+</div>
+
+</body>
+</html>
