@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Game App — Passkey Demo</title>
 
-    <link rel="stylesheet" href="/auth.css">
+    <link rel="stylesheet" href="/auth/auth.css">
 
     <style>
         body {
@@ -119,12 +119,12 @@
     </div>
 </div>
 
-<script src="/auth-client.js"></script>
+<script src="/auth/auth-client.js"></script>
 
 <script>
-    const auth = new AuthClient('http://localhost:7181', {
+    const auth = new AuthClient('http://localhost:7181/auth', {
         clientId:    'game-client',
-        redirectUri: 'http://localhost:7181/demo.html',
+        redirectUri: 'http://localhost:7181/auth/demo.html',
 
         onLogin: (token) => {
             console.log('logged in', token);
