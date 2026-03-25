@@ -15,27 +15,28 @@ import java.time.Duration;
 import java.util.Optional;
 
 /**
- * Calls the game server to validate that an email address belongs to a known user.
+ * Calls the application server to validate that an email address belongs to a known user.
+ * Used during passkey recovery to confirm the email is registered before sending a link.
  *
- * Expected game-server endpoint:
- *   POST {auth.game-server.url}/auth/validate-email
- *   Header: X-Auth-Secret: {auth.game-server.secret}
+ * Expected app-server endpoint:
+ *   POST {auth.app-server.url}/auth/validate-email
+ *   Header: X-Auth-Secret: {auth.app-server.secret}
  *   Body:   {"email":"user@example.com"}
  *   200 OK: {"userId":"abc123","email":"user@example.com"}
  *   non-200: email not found
  *
- * Omit auth.game-server.url in application.properties to disable recovery entirely.
+ * Omit auth.app-server.url in application.properties to disable recovery entirely.
  */
 @ApplicationScoped
-public class GameServerClient {
+public class AppServerClient {
 
-    private static final Logger log = Logger.getLogger(GameServerClient.class);
+    private static final Logger log = Logger.getLogger(AppServerClient.class);
 
-    @ConfigProperty(name = "auth.game-server.url")
-    java.util.Optional<String> gameServerUrl;
+    @ConfigProperty(name = "auth.app-server.url")
+    Optional<String> appServerUrl;
 
-    @ConfigProperty(name = "auth.game-server.secret")
-    java.util.Optional<String> gameServerSecret;
+    @ConfigProperty(name = "auth.app-server.secret")
+    Optional<String> appServerSecret;
 
     @Inject
     ObjectMapper mapper;
@@ -46,19 +47,19 @@ public class GameServerClient {
 
     /**
      * Returns the userId associated with the given email, or empty if not found
-     * or the game server is not configured.
+     * or the app server is not configured.
      */
     public Optional<String> findUserIdByEmail(String email) {
-        if (gameServerUrl.isEmpty()) return Optional.empty();
+        if (appServerUrl.isEmpty()) return Optional.empty();
 
         try {
             String body = mapper.writeValueAsString(mapper.createObjectNode().put("email", email));
 
             HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create(gameServerUrl.get().stripTrailing() + "/auth/validate-email"))
+                    .uri(URI.create(appServerUrl.get().stripTrailing() + "/auth/validate-email"))
                     .timeout(Duration.ofSeconds(5))
                     .header("Content-Type", "application/json")
-                    .header("X-Auth-Secret", gameServerSecret.orElse(""))
+                    .header("X-Auth-Secret", appServerSecret.orElse(""))
                     .POST(HttpRequest.BodyPublishers.ofString(body))
                     .build();
 
@@ -71,7 +72,7 @@ public class GameServerClient {
             return Optional.of(userIdNode.asText());
 
         } catch (Exception e) {
-            log.warnf(e, "Game server email validation failed for request");
+            log.warnf(e, "App server email validation failed");
             return Optional.empty();
         }
     }

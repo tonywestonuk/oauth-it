@@ -22,7 +22,7 @@ import java.util.UUID;
 @ApplicationScoped
 public class JwtService {
 
-    private static final long JWT_TTL_MS = 15 * 60 * 1000L; // 15 minutes
+    private static final long JWT_TTL_MS = 48 * 60 * 60 * 1000L; // 48 hours
 
     @ConfigProperty(name = "auth.jwt.secret")
     String secret;

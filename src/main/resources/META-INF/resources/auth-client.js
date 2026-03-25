@@ -3,24 +3,32 @@
  * Served at /auth-client.js
  *
  * Usage:
- *   <script src="http://localhost:8080/auth-client.js"></script>
+ *   <script src="https://auth.example.com/auth-client.js"></script>
  *   <script>
- *     const auth = new AuthClient('http://localhost:8080', {
- *       clientId: 'game-client',
- *       redirectUri: 'http://localhost:8080/demo.html',
- *       onLogin: (token) => console.log('logged in'),
- *       onSignup: () => console.log('registered'),
+ *     const auth = new AuthClient('https://auth.example.com', {
+ *       clientId:    'my-app',
+ *       redirectUri: 'https://myapp.example.com/',
+ *       cookieName:  'access_token',   // optional, default 'access_token'
+ *       onLogin:  () => location.reload(),
+ *       onSignup: () => auth.showLogin(container),
  *     });
- *     auth.showLogin(document.getElementById('container'));
  *   </script>
+ *
+ * The client handles:
+ *   - Setting and clearing the access_token cookie
+ *   - Silently refreshing the token 30 minutes before expiry
+ *   - Re-scheduling the refresh timer on every page load
  */
 class AuthClient {
     constructor(authServerUrl, options = {}) {
-        this.url = authServerUrl.replace(/\/$/, '');
-        this.clientId = options.clientId || '';
+        this.url        = authServerUrl.replace(/\/$/, '');
+        this.clientId   = options.clientId   || '';
         this.redirectUri = options.redirectUri || '';
-        this.onLogin = options.onLogin || (() => {});
-        this.onSignup = options.onSignup || (() => {});
+        this.onLogin    = options.onLogin    || (() => {});
+        this.onSignup   = options.onSignup   || (() => {});
+        this._cookieName  = options.cookieName || 'access_token';
+        this._refreshTimer = null;
+        this._initRefreshTimer();
     }
 
     // ------------------------------------------------------------------ //
@@ -51,11 +59,12 @@ class AuthClient {
         this._wireSignup(container);
     }
 
-    getToken() { return localStorage.getItem('_auth_token') || null; }
-
     logout() {
-        localStorage.removeItem('_auth_token');
-        document.cookie = '_auth_token=; path=/; max-age=0; SameSite=Strict';
+        if (this._refreshTimer) clearTimeout(this._refreshTimer);
+        this._refreshTimer = null;
+        localStorage.removeItem('_auth_access_token');
+        localStorage.removeItem('_auth_token_expiry');
+        document.cookie = `${this._cookieName}=; path=/; max-age=0; SameSite=Lax`;
     }
 
     // ------------------------------------------------------------------ //
@@ -80,7 +89,6 @@ class AuthClient {
             btn.textContent = 'Waiting for passkey\u2026';
 
             try {
-                // 1. Get assertion options from server
                 const startRes = await fetch(this.url + '/webauthn/auth/start', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -89,11 +97,9 @@ class AuthClient {
                 const startData = await startRes.json();
                 if (startData.error) throw new Error(startData.error);
 
-                // 2. Parse options and invoke browser passkey prompt
                 const requestOptions = this._parseAssertionOptions(startData.requestOptions);
                 const assertion = await navigator.credentials.get({ publicKey: requestOptions });
 
-                // 3. Send assertion + PKCE params to server
                 const finishRes = await fetch(this.url + '/webauthn/auth/finish', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -110,7 +116,6 @@ class AuthClient {
                 const finishData = await finishRes.json();
                 if (finishData.error) throw new Error(finishData.error);
 
-                // 4. Exchange auth code for JWT
                 await this._exchangeCode(finishData.code);
 
             } catch (err) {
@@ -143,7 +148,6 @@ class AuthClient {
             btn.textContent = 'Setting up passkey\u2026';
 
             try {
-                // 1. Get creation options from server
                 const startRes = await fetch(this.url + '/webauthn/register/start', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -152,11 +156,9 @@ class AuthClient {
                 const startData = await startRes.json();
                 if (startData.error) throw new Error(startData.error);
 
-                // 2. Parse and invoke browser passkey creation prompt
                 const creationOptions = this._parseCreationOptions(startData.creationOptions);
                 const credential = await navigator.credentials.create({ publicKey: creationOptions });
 
-                // 3. Send credential to server
                 const finishRes = await fetch(this.url + '/webauthn/register/finish', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -168,7 +170,6 @@ class AuthClient {
                 const finishData = await finishRes.json();
                 if (finishData.error) throw new Error(finishData.error);
 
-                // Show success
                 container.innerHTML = `
                     <div class="auth-card auth-card--wide">
                         <h1>Passkey Created!</h1>
@@ -186,7 +187,7 @@ class AuthClient {
     }
 
     // ------------------------------------------------------------------ //
-    // Token exchange
+    // Token exchange + rolling refresh
     // ------------------------------------------------------------------ //
 
     async _exchangeCode(code) {
@@ -195,24 +196,67 @@ class AuthClient {
             method: 'POST',
             headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
             body: new URLSearchParams({
-                grant_type: 'authorization_code',
+                grant_type:    'authorization_code',
                 code,
                 code_verifier: verifier,
-                client_id: this.clientId,
-                redirect_uri: this.redirectUri,
+                client_id:     this.clientId,
+                redirect_uri:  this.redirectUri,
             }),
         });
         const data = await res.json();
         if (!data.access_token) throw new Error('Token exchange failed.');
 
-        localStorage.setItem('_auth_token', data.access_token);
-        const maxAge = data.expires_in || 900;
-        document.cookie = `_auth_token=${data.access_token}; path=/; max-age=${maxAge}; SameSite=Strict`;
-
         sessionStorage.removeItem('_auth_verifier');
         sessionStorage.removeItem('_auth_state');
 
+        this._storeToken(data.access_token, data.expires_in || 172800);
         this.onLogin(data.access_token);
+    }
+
+    async _doRefresh() {
+        const token = localStorage.getItem('_auth_access_token');
+        if (!token) return;
+        try {
+            const res = await fetch(this.url + '/token/refresh', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: new URLSearchParams({ token }),
+            });
+            if (!res.ok) { this._clearStored(); return; }
+            const data = await res.json();
+            if (!data.access_token) { this._clearStored(); return; }
+            this._storeToken(data.access_token, data.expires_in || 172800);
+        } catch (e) {
+            // Network error — leave cookie alone, retry next schedule
+        }
+    }
+
+    _storeToken(token, expiresIn) {
+        localStorage.setItem('_auth_access_token', token);
+        localStorage.setItem('_auth_token_expiry', String(Date.now() + expiresIn * 1000));
+        document.cookie = `${this._cookieName}=${token}; path=/; max-age=${expiresIn}; SameSite=Lax`;
+        this._scheduleRefresh(expiresIn);
+    }
+
+    _scheduleRefresh(expiresIn) {
+        if (this._refreshTimer) clearTimeout(this._refreshTimer);
+        // Refresh 30 minutes before expiry (minimum 5 seconds)
+        const delay = Math.max((expiresIn - 30 * 60) * 1000, 5000);
+        this._refreshTimer = setTimeout(() => this._doRefresh(), delay);
+    }
+
+    _initRefreshTimer() {
+        const expiry = parseInt(localStorage.getItem('_auth_token_expiry') || '0', 10);
+        if (!expiry) return;
+        const remainingSecs = (expiry - Date.now()) / 1000;
+        if (remainingSecs <= 0) return;
+        this._scheduleRefresh(remainingSecs);
+    }
+
+    _clearStored() {
+        localStorage.removeItem('_auth_access_token');
+        localStorage.removeItem('_auth_token_expiry');
+        document.cookie = `${this._cookieName}=; path=/; max-age=0; SameSite=Lax`;
     }
 
     // ------------------------------------------------------------------ //
@@ -319,8 +363,8 @@ class AuthClient {
     }
 
     async _pkce() {
-        const verifier = this._rand(64);
-        const digest   = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(verifier));
+        const verifier  = this._rand(64);
+        const digest    = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(verifier));
         const challenge = btoa(String.fromCharCode(...new Uint8Array(digest)))
             .replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
         return { verifier, challenge };

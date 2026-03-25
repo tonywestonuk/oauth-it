@@ -1,7 +1,7 @@
 package com.oauth_it.resource;
 
 import com.oauth_it.model.User;
-import com.oauth_it.service.GameServerClient;
+import com.oauth_it.service.AppServerClient;
 import com.oauth_it.service.MailService;
 import com.oauth_it.service.SecurityUtils;
 import com.oauth_it.service.TokenStore;
@@ -22,7 +22,7 @@ import java.util.Optional;
  * Passkey recovery flow.
  *
  * GET  /recover-passkey          — email form
- * POST /recover-passkey          — validate email via game server, send recovery link
+ * POST /recover-passkey          — validate email via app server, send recovery link
  * GET  /recover-passkey/verify   — landing page before WebAuthn re-registration
  */
 @Path("/")
@@ -36,15 +36,15 @@ public class PasswordResetResource {
     @Inject UserStore userStore;
     @Inject TokenStore tokenStore;
     @Inject MailService mailService;
-    @Inject GameServerClient gameServerClient;
+    @Inject AppServerClient appServerClient;
 
     private static final Logger log = Logger.getLogger(PasswordResetResource.class);
 
     @ConfigProperty(name = "auth.base-url")
     String baseUrl;
 
-    @ConfigProperty(name = "auth.game-server.url")
-    java.util.Optional<String> gameServerUrl;
+    @ConfigProperty(name = "auth.app-server.url")
+    java.util.Optional<String> appServerUrl;
 
     private static final String SENT_MSG =
             "If that email address is registered with your account, you'll receive a recovery link shortly. "
@@ -62,7 +62,7 @@ public class PasswordResetResource {
     @Consumes(MediaType.APPLICATION_FORM_URLENCODED)
     @Produces(MediaType.TEXT_HTML)
     public Response processRecovery(@FormParam("email") String email) {
-        if (gameServerUrl.isEmpty()) {
+        if (appServerUrl.isEmpty()) {
             return Response.ok(message
                     .data("title", "Recovery Unavailable")
                     .data("body", "Passkey recovery is not configured on this server. Please contact support.")
@@ -73,8 +73,8 @@ public class PasswordResetResource {
 
         if (email != null && !email.isBlank()) {
             email = email.trim();
-            // Ask the game server whether this email belongs to a registered user
-            Optional<String> userIdOpt = gameServerClient.findUserIdByEmail(email);
+            // Ask the app server whether this email belongs to a registered user
+            Optional<String> userIdOpt = appServerClient.findUserIdByEmail(email);
             if (userIdOpt.isPresent()) {
                 Optional<User> userOpt = userStore.findByUserId(userIdOpt.get());
                 if (userOpt.isPresent()) {

@@ -69,7 +69,7 @@ public class TokenResource {
         Map<String, Object> responseBody = Map.of(
                 "access_token", jwt,
                 "token_type", "Bearer",
-                "expires_in", 900
+                "expires_in", 172800
         );
 
         return Response.ok(responseBody).build();

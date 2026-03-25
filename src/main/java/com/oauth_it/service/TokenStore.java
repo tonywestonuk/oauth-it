@@ -16,7 +16,7 @@ import java.util.concurrent.TimeUnit;
 public class TokenStore {
 
     private static final long AUTH_CODE_TTL_MS       = 60_000L;
-    private static final long JWT_TTL_MS             = 15 * 60 * 1000L;
+    private static final long JWT_TTL_MS             = 48 * 60 * 60 * 1000L; // 48 hours
     private static final long RECOVERY_TOKEN_TTL_MS  = 15 * 60 * 1000L;
     public  static final long WEBAUTHN_CHALLENGE_TTL_MS = 5 * 60 * 1000L;
 
