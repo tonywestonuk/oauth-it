@@ -72,21 +72,18 @@ public class PasswordResetResource {
         }
 
         if (email != null && !email.isBlank()) {
-            email = email.trim();
-            // Ask the app server whether this email belongs to a registered user
-            Optional<String> userIdOpt = appServerClient.findUserIdByEmail(email);
-            if (userIdOpt.isPresent()) {
-                Optional<User> userOpt = userStore.findByUserId(userIdOpt.get());
-                if (userOpt.isPresent()) {
-                    String token = SecurityUtils.randomHex(32);
-                    tokenStore.storeRecoveryToken(token, userOpt.get().userId);
-                    try {
-                        mailService.sendPasskeyRecoveryEmail(email, token);
-                    } catch (Exception e) {
-                        log.warnf(e, "Failed to send passkey recovery email (token still valid)");
-                    }
-                }
-            }
+            final String trimmedEmail = email.trim();
+            appServerClient.findUserIdByEmail(trimmedEmail)
+                    .flatMap(userStore::findByUserId)
+                    .ifPresent(user -> {
+                        String token = SecurityUtils.randomHex(32);
+                        tokenStore.storeRecoveryToken(token, user.userId);
+                        try {
+                            mailService.sendPasskeyRecoveryEmail(trimmedEmail, token);
+                        } catch (Exception e) {
+                            log.warnf(e, "Failed to send passkey recovery email (token still valid)");
+                        }
+                    });
         }
 
         return Response.ok(message

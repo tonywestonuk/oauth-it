@@ -13,6 +13,7 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -35,17 +36,15 @@ public class AuthorizeResource {
 
     @PostConstruct
     void init() {
-        if (clientsConfig != null && !clientsConfig.isBlank()) {
-            for (String entry : clientsConfig.split(",")) {
-                entry = entry.trim();
-                int idx = entry.indexOf(':');
-                if (idx > 0) {
-                    String clientId = entry.substring(0, idx).trim();
-                    String redirectUri = entry.substring(idx + 1).trim();
-                    allowedClients.computeIfAbsent(clientId, k -> new HashSet<>()).add(redirectUri);
-                }
-            }
-        }
+        if (clientsConfig == null || clientsConfig.isBlank()) return;
+        Arrays.stream(clientsConfig.split(","))
+                .map(String::trim)
+                .filter(e -> e.contains(":"))
+                .forEach(e -> {
+                    int idx = e.indexOf(':');
+                    allowedClients.computeIfAbsent(e.substring(0, idx).trim(), k -> new HashSet<>())
+                                  .add(e.substring(idx + 1).trim());
+                });
     }
 
     @GET

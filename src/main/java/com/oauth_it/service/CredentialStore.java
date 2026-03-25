@@ -140,7 +140,7 @@ public class CredentialStore implements CredentialRepository {
     private void rewriteFile() {
         List<String> lines = credentials.stream()
                 .map(StoredCredential::toLine)
-                .collect(Collectors.toList());
+                .toList();
         try {
             Files.write(Path.of(credentialsFile), lines);
         } catch (IOException e) {
