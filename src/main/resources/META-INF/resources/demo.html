@@ -122,9 +122,10 @@
 <script src="/auth/auth-client.js"></script>
 
 <script>
-    const auth = new AuthClient('http://localhost:7181/auth', {
+    const authBase = window.location.origin + '/auth';
+    const auth = new AuthClient(authBase, {
         clientId:    'game-client',
-        redirectUri: 'http://localhost:7181/auth/demo.html',
+        redirectUri: authBase + '/demo.html',
 
         onLogin: (token) => {
             console.log('logged in', token);
